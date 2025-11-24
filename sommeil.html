@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Sleep Cycle</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --primary: #bb86fc;
+            --secondary: #03dac6;
+            --text-main: #ffffff;
+            --text-muted: #b0b0b0;
+            --btn-bg: #333333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h1 { color: var(--primary); margin-bottom: 5px; }
+        .subtitle { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 25px; }
+
+        /* TABS / BASCULE */
+        .tabs {
+            display: flex;
+            background-color: #2c2c2c;
+            border-radius: 50px;
+            padding: 5px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            z-index: 2;
+            font-weight: bold;
+            color: var(--text-muted);
+            transition: color 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .tab.active { color: #000; }
+
+        .indicator {
+            position: absolute;
+            top: 5px; bottom: 5px; left: 5px;
+            width: calc(50% - 5px);
+            background-color: var(--primary);
+            border-radius: 40px;
+            transition: transform 0.3s ease;
+            z-index: 1;
+        }
+
+        /* INPUT SECTION */
+        .input-group {
+            background-color: var(--card-bg);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        label { display: block; margin-bottom: 15px; color: var(--text-main); font-size: 1.1rem; }
+
+        input[type="time"] {
+            background: #2c2c2c;
+            border: 1px solid #333;
+            color: white;
+            font-size: 2.5rem;
+            padding: 10px;
+            border-radius: 15px;
+            width: 100%;
+            text-align: center;
+            color-scheme: dark;
+            margin-bottom: 15px;
+        }
+
+        /* RACCOURCIS */
+        .shortcuts {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .btn-shortcut {
+            background-color: var(--btn-bg);
+            color: var(--text-main);
+            border: 1px solid #444;
+            padding: 8px 0;
+            flex: 1;
+            font-size: 0.9rem;
+            border-radius: 10px;
+            cursor: pointer;
+            width: auto;
+        }
+
+        .btn-shortcut:active { background-color: var(--primary); color: black; }
+
+        /* BOUTONS ACTIONS */
+        .btn-calc {
+            background-color: var(--secondary);
+            color: #000;
+            border: none;
+            padding: 15px 0;
+            width: 100%;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        
+        .btn-alarm-main {
+            background-color: #2c2c2c;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 10px 0;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 15px;
+            cursor: pointer;
+            display: none; /* Caché par défaut */
+        }
+
+        /* RESULTATS */
+        #resultsArea { margin-top: 30px; width: 100%; display: none; }
+        
+        .card-result {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 5px solid var(--secondary);
+            animation: slideUp 0.4s ease;
+        }
+
+        .card-main {
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 0 15px rgba(187, 134, 252, 0.15);
+        }
+
+        .res-left { text-align: left; }
+        .res-time { font-size: 1.8rem; font-weight: bold; color: #fff; line-height: 1; }
+        .res-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 5px; }
+        
+        .res-right { text-align: right; display: flex; flex-direction: column; align-items: flex-end;}
+        .res-cycles { color: var(--secondary); font-weight: bold; font-size: 0.9rem; }
+        .res-details { color: var(--text-muted); font-size: 0.8rem; margin-bottom: 5px;}
+
+        /* Petit bouton alarme dans la carte */
+        .btn-card-alarm {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Sleep Calculator</h1>
+        <p class="subtitle">+15min pour s'endormir inclus</p>
+
+        <div class="tabs">
+            <div class="indicator" id="tabIndicator"></div>
+            <div class="tab active" onclick="switchMode('wake')" id="tabWake">Heure de Réveil</div>
+            <div class="tab" onclick="switchMode('bed')" id="tabBed">Heure de Coucher</div>
+        </div>
+
+        <div class="input-group">
+            <label id="inputLabel" for="timeInput">Je veux me réveiller à :</label>
+            <input type="time" id="timeInput" required onchange="updateMainAlarmBtn()">
+
+            <div class="shortcuts" id="shortcutsContainer">
+                <button class="btn-shortcut" onclick="setQuickTime('06:00')">06h00</button>
+                <button class="btn-shortcut" onclick="setQuickTime('06:15')">06h15</button>
+                <button class="btn-shortcut" onclick="setQuickTime('07:00')">07h00</button>
+                <button class="btn-shortcut" onclick="setQuickTime('08:00')">08h00</button>
+            </div>
+
+            <button class="btn-calc" onclick="calculate()">Calculer</button>
+            
+            <a id="mainAlarmBtn" href="#" class="btn-alarm-main">⏰ Régler le réveil (06:00)</a>
+        </div>
+
+        <div id="resultsArea"></div>
+        
+        <p class="info-text" style="color:#666; font-size:0.7rem; margin-top:20px">
+            Note : Pour que les boutons alarmes fonctionnent, créez un Raccourci nommé "SleepAlarm" sur votre iPhone.
+        </p>
+    </div>
+
+    <script>
+        let mode = 'wake';
+        document.getElementById('timeInput').value = "06:00";
+        updateMainAlarmBtn();
+
+        function setQuickTime(timeStr) {
+            if (mode !== 'wake') switchMode('wake');
+            document.getElementById('timeInput').value = timeStr;
+            updateMainAlarmBtn();
+            calculate();
+        }
+
+        function updateMainAlarmBtn() {
+            const timeVal = document.getElementById('timeInput').value;
+            const btn = document.getElementById('mainAlarmBtn');
+            if (mode === 'wake') {
+                btn.style.display = 'block';
+                btn.innerText = `⏰ Régler le réveil (${timeVal})`;
+                // Lien magique vers Raccourcis
+                btn.href = `shortcuts://run-shortcut?name=SleepAlarm&input=${timeVal}`;
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
+        function switchMode(selectedMode) {
+            mode = selectedMode;
+            const indicator = document.getElementById('tabIndicator');
+            const label = document.getElementById('inputLabel');
+            const tabWake = document.getElementById('tabWake');
+            const tabBed = document.getElementById('tabBed');
+            const results = document.getElementById('resultsArea');
+            const shortcuts = document.getElementById('shortcutsContainer');
+
+            results.style.display = 'none'; 
+
+            if (mode === 'wake') {
+                indicator.style.transform = 'translateX(0)';
+                label.innerText = "Je veux me réveiller à :";
+                tabWake.classList.add('active');
+                tabBed.classList.remove('active');
+                shortcuts.style.display = 'flex';
+                document.getElementById('timeInput').value = "06:00";
+            } else {
+                indicator.style.transform = 'translateX(100%)';
+                label.innerText = "Je vais me coucher à :";
+                tabWake.classList.remove('active');
+                tabBed.classList.add('active');
+                shortcuts.style.display = 'none';
+                
+                const d = new Date();
+                document.getElementById('timeInput').value = 
+                    `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            }
+            updateMainAlarmBtn();
+        }
+
+        function calculate() {
+            const inputTime = document.getElementById('timeInput').value;
+            if (!inputTime) return;
+
+            const [h, m] = inputTime.split(':').map(Number);
+            const now = new Date();
+            let baseDate = new Date();
+            baseDate.setHours(h, m, 0, 0);
+
+            const resultsArea = document.getElementById('resultsArea');
+            resultsArea.innerHTML = '';
+            resultsArea.style.display = 'block';
+
+            const cycleMs = 90 * 60 * 1000;
+            const sleepDelayMs = 15 * 60 * 1000;
+            let suggestions = [];
+
+            if (mode === 'wake') {
+                // MODE 1: On affiche les heures de COUCHER (Pas de bouton alarme sur les résultats)
+                if (baseDate < now) baseDate.setDate(baseDate.getDate() + 1);
+
+                for (let i = 3; i <= 7; i++) {
+                    let totalSleepTime = (i * cycleMs);
+                    let bedTime = new Date(baseDate.getTime() - totalSleepTime - sleepDelayMs);
+                    suggestions.push({ time: bedTime, cycles: i, duration: totalSleepTime });
+                }
+
+                suggestions.sort((a, b) => a.time - b.time);
+                let validSuggestions = suggestions.filter(s => s.time > now);
+                if (validSuggestions.length === 0) validSuggestions = [suggestions[suggestions.length - 1]];
+                let finalDisplay = validSuggestions.slice(0, 3);
+
+                resultsArea.innerHTML += `<p style="color:#888; font-size:0.9rem; margin-bottom:10px">Mets-toi au lit à :</p>`;
+                finalDisplay.forEach((item, index) => createCard(item.time, item.cycles, item.duration, index === 0, false));
+
+            } else {
+                // MODE 2: On affiche les heures de REVEIL (Bouton alarme OUI)
+                if (baseDate < new Date(now.getTime() - 12*60*60*1000)) baseDate.setDate(baseDate.getDate() + 1);
+
+                let sleepStartDate = new Date(baseDate.getTime() + sleepDelayMs);
+                let cyclesToShow = [4, 5, 6]; 
+                
+                resultsArea.innerHTML += `<p style="color:#888; font-size:0.9rem; margin-bottom:10px">Règle ton réveil à :</p>`;
+                cyclesToShow.forEach((i) => {
+                    let duration = i * cycleMs;
+                    let wakeTime = new Date(sleepStartDate.getTime() + duration);
+                    createCard(wakeTime, i, duration, i === 5, true);
+                });
+            }
+        }
+
+        function createCard(dateObj, cycles, durationMs, isMain, showAlarmBtn) {
+            const timeStr = dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            
+            const h = Math.floor(durationMs / (1000 * 60 * 60));
+            const m = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+            const durationStr = `${h}h ${m > 0 ? m : ''}`;
+
+            // Génération du lien Shortcuts
+            const alarmLink = `shortcuts://run-shortcut?name=SleepAlarm&input=${timeStr}`;
+
+            const div = document.createElement('div');
+            div.className = `card-result ${isMain ? 'card-main' : ''}`;
+            
+            div.innerHTML = `
+                <div class="res-left">
+                    <div class="res-time">${timeStr}</div>
+                    <div class="res-sub">
+                       ${showAlarmBtn ? `<a href="${alarmLink}" class="btn-card-alarm">⏰ Activer</a>` : 'Heure de coucher'}
+                    </div>
+                </div>
+                <div class="res-right">
+                    <div class="res-cycles">${cycles} Cycles</div>
+                    <div class="res-details">${durationStr} de sommeil</div>
+                </div>
+            `;
+            document.getElementById('resultsArea').appendChild(div);
+        }
+    </script>
+</body>
+</html>
